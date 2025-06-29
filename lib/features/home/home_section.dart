@@ -74,7 +74,7 @@ class _HomeSectionState extends State<HomeSection>
                   child: CircleAvatar(
                     radius: avatarRadius,
                     backgroundImage: const AssetImage(
-                      'assets/images/userprofile.png',
+                      'assets/images/userProfile.jpg',
                     ),
                   ),
                 ),
