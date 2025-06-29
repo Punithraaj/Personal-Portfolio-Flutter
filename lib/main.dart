@@ -112,35 +112,35 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _onKeyEvent(KeyEvent event) {
-    if (event is! KeyDownEvent) return;
+    // Only respond to non-repeat down events or explicit repeat events
+    if (event is KeyDownEvent || event is KeyRepeatEvent) {
+      // (Optionally filter out the very first repeat if you like:)
+      // if (event is KeyDownEvent && event.repeat == false || event is KeyRepeatEvent) { ... }
 
-    double offset = _scrollController.offset;
-    switch (event.logicalKey.keyLabel) {
-      case 'Arrow Down':
-        offset += _scrollStep;
-        break;
-      case 'Arrow Up':
-        offset -= _scrollStep;
-        break;
-      case 'Page Down':
-        offset += MediaQuery.of(context).size.height * _pageFraction;
-        break;
-      case 'Page Up':
-        offset -= MediaQuery.of(context).size.height * _pageFraction;
-        break;
-      default:
-        return;
+      double offset = _scrollController.offset;
+      switch (event.logicalKey) {
+        case LogicalKeyboardKey.arrowDown:
+          offset += _scrollStep;
+          break;
+        case LogicalKeyboardKey.arrowUp:
+          offset -= _scrollStep;
+          break;
+        case LogicalKeyboardKey.pageDown:
+          offset += MediaQuery.of(context).size.height * _pageFraction;
+          break;
+        case LogicalKeyboardKey.pageUp:
+          offset -= MediaQuery.of(context).size.height * _pageFraction;
+          break;
+        default:
+          return;
+      }
+
+      final min = _scrollController.position.minScrollExtent;
+      final max = _scrollController.position.maxScrollExtent;
+      offset = offset.clamp(min, max);
+
+      _scrollController.jumpTo(offset);
     }
-
-    final min = _scrollController.position.minScrollExtent;
-    final max = _scrollController.position.maxScrollExtent;
-    offset = offset.clamp(min, max);
-
-    _scrollController.animateTo(
-      offset,
-      duration: const Duration(milliseconds: 200),
-      curve: Curves.easeInOut,
-    );
   }
 
   @override

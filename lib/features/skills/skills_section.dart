@@ -85,14 +85,14 @@ class _SkillsSectionState extends State<SkillsSection>
                   boxShadow: [
                     // subtle drop shadow
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
+                      color: Colors.black.withOpacity(0.15),
                       blurRadius: 20,
                       spreadRadius: 2,
                       offset: const Offset(0, 12),
                     ),
                     // blue glow
                     BoxShadow(
-                      color: Colors.blue.shade700.withOpacity(0.25),
+                      color: Colors.teal.withOpacity(0.1),
                       blurRadius: 20,
                       spreadRadius: 6,
                     ),

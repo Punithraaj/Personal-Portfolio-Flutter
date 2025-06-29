@@ -289,10 +289,15 @@ class _CompanyTimelineEntry extends StatelessWidget {
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.08),
-                    blurRadius: 20,
-                    spreadRadius: 4,
+                    color: Colors.black.withOpacity(0.15),
+                    blurRadius: 30,
+                    spreadRadius: 8,
                     offset: const Offset(0, 12),
+                  ),
+                  BoxShadow(
+                    color: Colors.teal.withOpacity(0.1),
+                    blurRadius: 60,
+                    spreadRadius: 2,
                   ),
                 ],
               ),
