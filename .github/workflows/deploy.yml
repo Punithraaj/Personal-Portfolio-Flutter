@@ -1,6 +1,6 @@
 name: Deploy Flutter Web to GitHub Pages
 
-# Grant write access so we can push to gh-pages
+# Grant write access so the job can push to gh-pages
 permissions:
   contents: write
 
@@ -18,7 +18,7 @@ jobs:
         uses: actions/checkout@v3
         with:
           persist-credentials: false  # don’t reuse the default token
-          fetch-depth: 0              # grab full history
+          fetch-depth: 0              # fetch full history
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -40,19 +40,19 @@ jobs:
         run: |
           set -eux
 
-          # 1. Enter the built output
+          # Navigate to the built output
           cd build/web
 
-          # 2. Init a fresh Git repo
-          git init
+          # Initialize a new Git repo with 'main' as the default branch
+          git init -b main
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          # 3. Commit all files
+          # Add and commit all files
           git add --all
           git commit -m "Deploy from $GITHUB_SHA"
 
-          # 4. Push to gh-pages (force update) using your PAT
+          # Push the 'main' branch to 'gh-pages'
           git push --force \
             "https://${GITHUB_ACTOR}:${GH_PAGES_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" \
-            HEAD:gh-pages
+            main:gh-pages
