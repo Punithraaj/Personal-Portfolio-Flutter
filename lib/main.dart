@@ -1,5 +1,8 @@
+// lib/main.dart
+
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:my_portfolio/core/utils/contants.dart';
 import 'package:my_portfolio/features/about/about_section.dart';
 import 'package:my_portfolio/features/common/portfolio_navigation.dart';
@@ -7,13 +10,10 @@ import 'package:my_portfolio/features/experience/experience_section.dart';
 import 'package:my_portfolio/features/home/home_section.dart';
 import 'package:my_portfolio/features/skills/skills_section.dart';
 
-void main() {
-  runApp(const MyPortfolioApp());
-}
+void main() => runApp(const MyPortfolioApp());
 
 class MyPortfolioApp extends StatelessWidget {
   const MyPortfolioApp({super.key});
-
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -29,18 +29,18 @@ class MyPortfolioApp extends StatelessWidget {
 }
 
 class HomePage extends StatefulWidget {
-  const HomePage({Key? key}) : super(key: key);
-
+  const HomePage({super.key});
   @override
   State<HomePage> createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> {
-  final ScrollController _scrollController = ScrollController();
+  final _scrollController = ScrollController();
+  final _focusNode = FocusNode();
   String _activeSection = 'Home';
-  bool _isProgrammaticScroll = false;
+  bool _isProgrammatic = false;
 
-  final Map<String, GlobalKey> _keys = {
+  final _keys = {
     'Home': GlobalKey(),
     'About': GlobalKey(),
     'Skills': GlobalKey(),
@@ -49,22 +49,35 @@ class _HomePageState extends State<HomePage> {
     'Contact': GlobalKey(),
   };
 
+  static const _scrollStep = 100.0;
+  static const _pageFraction = 0.8;
+
   @override
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _focusNode.requestFocus();
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController
+      ..removeListener(_onScroll)
+      ..dispose();
+    _focusNode.dispose();
+    super.dispose();
   }
 
   void _onScroll() {
-    // Ignore updates during programmatic scrolling
-    if (_isProgrammaticScroll) return;
-
-    // Find the deepest section whose top is at or above the toolbar
+    if (_isProgrammatic) return;
     for (final entry in _keys.entries.toList().reversed) {
       final ctx = entry.value.currentContext;
       if (ctx == null) continue;
-      final box = ctx.findRenderObject() as RenderBox;
-      final y = box.localToGlobal(Offset.zero).dy;
+      final y = (ctx.findRenderObject() as RenderBox)
+          .localToGlobal(Offset.zero)
+          .dy;
       if (y <= kToolbarHeight + 20) {
         if (_activeSection != entry.key) {
           setState(() => _activeSection = entry.key);
@@ -75,13 +88,11 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _scrollTo(String section) {
-    // 1) Immediately set active
     setState(() {
       _activeSection = section;
-      _isProgrammaticScroll = true;
+      _isProgrammatic = true;
     });
 
-    // 2) Scroll to that section
     final ctx = _keys[section]?.currentContext;
     if (ctx != null) {
       Scrollable.ensureVisible(
@@ -89,77 +100,96 @@ class _HomePageState extends State<HomePage> {
         duration: const Duration(milliseconds: 500),
         curve: Curves.easeInOut,
       ).then((_) {
-        // 3) After a brief delay, re-enable scroll-listener updates
         Future.delayed(const Duration(milliseconds: 100), () {
-          if (mounted) {
-            setState(() => _isProgrammaticScroll = false);
-          }
+          if (mounted) setState(() => _isProgrammatic = false);
         });
       });
     } else {
-      // Fallback: clear flag after a short delay
       Future.delayed(const Duration(milliseconds: 600), () {
-        if (mounted) setState(() => _isProgrammaticScroll = false);
+        if (mounted) setState(() => _isProgrammatic = false);
       });
     }
   }
 
-  @override
-  void dispose() {
-    _scrollController
-      ..removeListener(_onScroll)
-      ..dispose();
-    super.dispose();
+  void _onKeyEvent(KeyEvent event) {
+    if (event is! KeyDownEvent) return;
+
+    double offset = _scrollController.offset;
+    switch (event.logicalKey.keyLabel) {
+      case 'Arrow Down':
+        offset += _scrollStep;
+        break;
+      case 'Arrow Up':
+        offset -= _scrollStep;
+        break;
+      case 'Page Down':
+        offset += MediaQuery.of(context).size.height * _pageFraction;
+        break;
+      case 'Page Up':
+        offset -= MediaQuery.of(context).size.height * _pageFraction;
+        break;
+      default:
+        return;
+    }
+
+    final min = _scrollController.position.minScrollExtent;
+    final max = _scrollController.position.maxScrollExtent;
+    offset = offset.clamp(min, max);
+
+    _scrollController.animateTo(
+      offset,
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeInOut,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      endDrawer: PortfolioDrawer(
-        activeSection: _activeSection,
-        onItemSelected: _scrollTo,
-      ),
-      body: Stack(
-        children: [
-          // Main scrollable content
-          SingleChildScrollView(
-            controller: _scrollController,
-            child: Column(
-              children: [
-                Container(key: _keys['Home'], child: const HomeSection()),
-                Container(key: _keys['About'], child: const AboutSection()),
-                Container(key: _keys['Skills'], child: const SkillsSection()),
-                Container(
-                  key: _keys['Experience'],
-                  child: const ExperienceSection(),
-                ),
-
-                // Container(
-                //     key: _keys['Contact'], child: const ContactSection()),
-              ],
+    return KeyboardListener(
+      focusNode: _focusNode,
+      onKeyEvent: _onKeyEvent,
+      child: Scaffold(
+        endDrawer: PortfolioDrawer(
+          activeSection: _activeSection,
+          onItemSelected: _scrollTo,
+        ),
+        body: Stack(
+          children: [
+            SingleChildScrollView(
+              controller: _scrollController,
+              child: Column(
+                children: [
+                  Container(key: _keys['Home'], child: const HomeSection()),
+                  Container(key: _keys['About'], child: const AboutSection()),
+                  Container(key: _keys['Skills'], child: const SkillsSection()),
+                  Container(
+                    key: _keys['Experience'],
+                    child: const ExperienceSection(),
+                  ),
+                  // ...projects, contact, etc.
+                ],
+              ),
             ),
-          ),
-
-          // Sticky, blurred navbar with active‐state underline
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: ClipRect(
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
-                child: Material(
-                  elevation: 4,
-                  color: Colors.white.withOpacity(0.8),
-                  child: PortfolioNavigation(
-                    activeSection: _activeSection,
-                    onNavItemClicked: _scrollTo,
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: ClipRect(
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
+                  child: Material(
+                    elevation: 4,
+                    color: Colors.white.withOpacity(0.8),
+                    child: PortfolioNavigation(
+                      activeSection: _activeSection,
+                      onNavItemClicked: _scrollTo,
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
