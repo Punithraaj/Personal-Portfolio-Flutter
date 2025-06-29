@@ -6,12 +6,12 @@ permissions:
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -29,23 +29,24 @@ jobs:
       - name: Build web
         run: flutter build web --release
 
-      # ← Add this debug step right before deploy
-      - name: Debug Git & Token
+      - name: Deploy to gh-pages
+        env:
+          GH_PAGES_TOKEN: ${{ secrets.GH_PAGES_TOKEN }}
         run: |
-          echo "Remotes:"
-          git remote -v
-          if [ -z "${{ secrets.GH_PAGES_TOKEN }}" ]; then
-            echo "❌ GH_PAGES_TOKEN is empty or not set" >&2
-            exit 1
-          else
-            echo "✅ GH_PAGES_TOKEN is present"
-          fi
+          set -eux
 
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          personal_token: ${{ secrets.GH_PAGES_TOKEN }}
-          publish_branch: gh-pages
-          publish_dir: ./build/web
-          force_orphan: true
-          commit_message: "Deploy from ${{ github.sha }}"
+          # 1. Go into the built output
+          cd build/web
+
+          # 2. Init a new repo and configure user
+          git init
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # 3. Commit the build
+          git add --all
+          git commit -m "Deploy from $GITHUB_SHA"
+
+          # 4. Push via HTTPS embedding the PAT
+          git push --force "https://${GH_PAGES_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" \
+            main:gh-pages

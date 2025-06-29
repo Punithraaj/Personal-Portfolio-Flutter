@@ -1,4 +1,51 @@
-- name: Debug git config
-  run: |
-    git remote -v
-    echo "🤖 Using token: ${{ secrets.GH_PAGES_TOKEN && '✓ exists' || '✗ missing' }}"
+# .github/workflows/deploy.yml
+name: Deploy Flutter Web to GitHub Pages
+
+permissions:
+  contents: write
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build web
+        run: flutter build web --release
+
+      # ← Add this debug step right before deploy
+      - name: Debug Git & Token
+        run: |
+          echo "Remotes:"
+          git remote -v
+          if [ -z "${{ secrets.GH_PAGES_TOKEN }}" ]; then
+            echo "❌ GH_PAGES_TOKEN is empty or not set" >&2
+            exit 1
+          else
+            echo "✅ GH_PAGES_TOKEN is present"
+          fi
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          personal_token: ${{ secrets.GH_PAGES_TOKEN }}
+          publish_branch: gh-pages
+          publish_dir: ./build/web
+          force_orphan: true
+          commit_message: "Deploy from ${{ github.sha }}"
