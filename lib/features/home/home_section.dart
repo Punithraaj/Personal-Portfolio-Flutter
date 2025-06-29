@@ -60,23 +60,31 @@ class _HomeSectionState extends State<HomeSection>
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Container(
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFFFFD54F).withOpacity(0.6),
-                        blurRadius: 30 * _glowAnimation.value,
-                        spreadRadius: 2,
+                AnimatedBuilder(
+                  animation: _glowAnimation,
+                  builder: (context, child) {
+                    return Transform.scale(
+                      scale: _glowAnimation.value,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFFFFD54F).withOpacity(0.6),
+                              blurRadius: 30 * _glowAnimation.value,
+                              spreadRadius: 2,
+                            ),
+                          ],
+                        ),
+                        child: CircleAvatar(
+                          radius: avatarRadius,
+                          backgroundImage: const AssetImage(
+                            'assets/images/userprofile.png',
+                          ),
+                        ),
                       ),
-                    ],
-                  ),
-                  child: CircleAvatar(
-                    radius: avatarRadius,
-                    backgroundImage: const AssetImage(
-                      'assets/images/userprofile.png',
-                    ),
-                  ),
+                    );
+                  },
                 ),
                 const SizedBox(height: 10),
                 const Text(
