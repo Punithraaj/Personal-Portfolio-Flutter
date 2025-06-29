@@ -1,6 +1,5 @@
 name: Deploy Flutter Web to GitHub Pages
 
-# Grant write access so we can push to gh-pages
 permissions:
   contents: write
 
@@ -17,7 +16,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
-          # Don’t reuse the default token, and fetch full history
           persist-credentials: false
           fetch-depth: 0
 
@@ -32,23 +30,25 @@ jobs:
       - name: Build web
         run: flutter build web --release
 
-      - name: Deploy to GitHub Pages
+      - name: Deploy to gh-pages
         env:
           GH_PAGES_TOKEN: ${{ secrets.GH_PAGES_TOKEN }}
         run: |
           set -eux
 
-          # 1. Enter the build output
+          # 1. Enter build output
           cd build/web
 
-          # 2. Initialize a fresh Git repo
+          # 2. Init a fresh Git repo
           git init
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          # 3. Commit all files
+          # 3. Commit everything
           git add --all
           git commit -m "Deploy from $GITHUB_SHA"
 
-          # 4. Push to gh-pages (force update)
-          git push --force "https://${GH_PAGES_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:gh-pages
+          # 4. Push to gh-pages using actor as user and PAT as password
+          git push --force \
+            "https://${GITHUB_ACTOR}:${GH_PAGES_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" \
+            HEAD:gh-pages
