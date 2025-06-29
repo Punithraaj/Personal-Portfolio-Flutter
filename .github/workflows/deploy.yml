@@ -1,44 +1,4 @@
-# .github/workflows/deploy.yml
-name: Deploy Flutter Web to GitHub Pages
-
-# Give write access to repo contents
-permissions:
-  contents: write
-
-on:
-  push:
-    branches:
-      - main
-
-jobs:
-  build-and-deploy:
-    runs-on: ubuntu-latest
-
-    steps:
-      # 1) Checkout without the default GITHUB_TOKEN credentials
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          persist-credentials: false   # don’t let checkout re-use the built-in token
-          fetch-depth: 0               # get full history (needed for branch ops)
-
-      # 2) Install Flutter SDK
-      - uses: subosito/flutter-action@v2
-        with:
-          channel: stable
-
-      # 3) Get dependencies
-      - name: Install dependencies
-        run: flutter pub get
-
-      # 4) Build Web
-      - name: Build web
-        run: flutter build web --release
-
-      # 5) Deploy using your PAT
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          personal_token: ${{ secrets.GH_PAGES_TOKEN }}  # ← use personal_token here
-          publish_dir: ./build/web
-          # branch: gh-pages  # (optional, defaults to gh-pages)
+- name: Debug git config
+  run: |
+    git remote -v
+    echo "🤖 Using token: ${{ secrets.GH_PAGES_TOKEN && '✓ exists' || '✗ missing' }}"
